@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080c18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EB Tracker">
+<title>EB Tracker — MESCOM</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c18; --surface: #0f1628; --surface2: #161e38;
+  --border: #1e2d52; --accent: #00e5ff; --green: #00ff87;
+  --yellow: #ffd600; --red: #ff3d5a; --orange: #ff8c42;
+  --text: #e8eeff; --muted: #4a5580;
+  --fd: 'Syne', sans-serif; --fm: 'Space Mono', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background:var(--bg); color:var(--text); font-family:var(--fd);
+  min-height:100dvh; overflow-x:hidden; padding-bottom:72px;
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+
+/* ── Pages ── */
+.page { display:none; padding:0 1rem 1rem; position:relative; z-index:1; }
+.page.active { display:block; }
+
+/* ── Header ── */
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1.4rem 1rem 0.75rem; position:relative; z-index:1;
+}
+.logo-title { font-size:1.05rem; font-weight:800; letter-spacing:.08em; color:var(--accent); text-transform:uppercase; }
+.logo-sub { font-size:.6rem; color:var(--muted); font-family:var(--fm); letter-spacing:.1em; margin-top:2px; }
+.icon-btn {
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+  width:38px; height:38px; border-radius:10px; display:flex; align-items:center;
+  justify-content:center; cursor:pointer; font-size:1rem; transition:all .2s;
+}
+.icon-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── Tab Bar ── */
+.tab-bar {
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(8,12,24,.96); backdrop-filter:blur(20px);
+  border-top:1px solid var(--border); display:flex; z-index:50;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tab-btn {
+  flex:1; padding:.65rem .5rem; display:flex; flex-direction:column;
+  align-items:center; gap:.2rem; background:none; border:none; cursor:pointer;
+}
+.tab-icon { font-size:1.1rem; transition:filter .2s; }
+.tab-lbl { font-size:.55rem; font-family:var(--fm); color:var(--muted); letter-spacing:.08em; text-transform:uppercase; transition:color .2s; }
+.tab-btn.active .tab-lbl { color:var(--accent); }
+.tab-btn.active .tab-icon { filter:drop-shadow(0 0 5px var(--accent)); }
+
+/* ── Cards ── */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.2rem 1.4rem; margin-bottom:.7rem; }
+.card-title { font-size:.6rem; font-family:var(--fm); color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:.9rem; }
+
+/* ── Zone Card ── */
+.zone-card { position:relative; overflow:hidden; transition:border-color .5s; }
+.zone-card::before { content:''; position:absolute; top:-50%; right:-30%; width:200px; height:200px; border-radius:50%; opacity:.07; filter:blur(40px); transition:background .5s; }
+.zone-card.safe { border-color:rgba(0,255,135,.3); } .zone-card.safe::before { background:var(--green); }
+.zone-card.caution { border-color:rgba(255,214,0,.3); } .zone-card.caution::before { background:var(--yellow); }
+.zone-card.danger { border-color:rgba(255,61,90,.4); } .zone-card.danger::before { background:var(--red); }
+.zone-card.over { border-color:rgba(255,61,90,.6); animation:pb 1.5s infinite; } .zone-card.over::before { background:var(--red); opacity:.12; }
+@keyframes pb { 0%,100%{border-color:rgba(255,61,90,.4)} 50%{border-color:rgba(255,61,90,.8)} }
+
+.zone-lbl { font-size:.6rem; font-family:var(--fm); letter-spacing:.15em; text-transform:uppercase; margin-bottom:.7rem; display:flex; align-items:center; gap:.4rem; }
+.zdot { width:7px; height:7px; border-radius:50%; animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.cs .zdot { background:var(--green); color:var(--green); }
+.cc .zdot { background:var(--yellow); color:var(--yellow); }
+.cd .zdot, .co .zdot { background:var(--red); color:var(--red); }
+
+.units-row { display:flex; align-items:baseline; gap:.4rem; margin-bottom:.2rem; }
+.units-big { font-size:3.5rem; font-weight:800; line-height:1; font-family:var(--fm); transition:color .4s; }
+.units-of { font-size:.78rem; color:var(--muted); font-family:var(--fm); }
+.units-sub { font-size:.7rem; color:var(--muted); font-family:var(--fm); margin-bottom:1.1rem; }
+.prog-wrap { background:rgba(255,255,255,.05); border-radius:100px; height:10px; overflow:hidden; margin-bottom:.55rem; }
+.prog-fill { height:100%; border-radius:100px; transition:width .8s cubic-bezier(.34,1.56,.64,1),background .5s; position:relative; }
+.prog-fill::after { content:''; position:absolute; right:0; top:0; bottom:0; width:18px; background:rgba(255,255,255,.25); filter:blur(4px); border-radius:100px; }
+.ps { background:linear-gradient(90deg,#00c853,var(--green)); }
+.pc { background:linear-gradient(90deg,#f9a825,var(--yellow)); }
+.pd { background:linear-gradient(90deg,#c62828,var(--red)); }
+.prog-marks { display:flex; justify-content:space-between; font-size:.56rem; font-family:var(--fm); color:var(--muted); }
+
+/* ── Stats ── */
+.stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.6rem; margin-bottom:.7rem; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem .7rem; }
+.st-icon { font-size:.85rem; margin-bottom:.25rem; display:block; }
+.st-val { font-size:1.2rem; font-weight:700; font-family:var(--fm); color:var(--accent); display:block; }
+.st-lbl { font-size:.53rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; display:block; line-height:1.3; }
+
+/* ── Bill Compare ── */
+.bill-compare { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+.bill-sc { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.85rem .75rem; }
+.bill-sc.hl { border-color:rgba(255,61,90,.4); background:rgba(255,61,90,.06); }
+.bill-sc-lbl { font-size:.56rem; color:var(--muted); font-family:var(--fm); letter-spacing:.07em; text-transform:uppercase; margin-bottom:.35rem; }
+.bill-amt { font-size:1.5rem; font-weight:800; font-family:var(--fm); color:var(--green); }
+.bill-amt.danger { color:var(--red); }
+.bill-note { font-size:.54rem; color:var(--muted); margin-top:.2rem; line-height:1.4; }
+
+/* ── Input ── */
+.input-row { display:flex; gap:.7rem; align-items:flex-end; }
+.input-grp { flex:1; }
+.input-lbl { font-size:.6rem; color:var(--muted); font-family:var(--fm); margin-bottom:.35rem; display:block; }
+.meter-input {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:12px; color:var(--text); font-family:var(--fm);
+  font-size:1.4rem; font-weight:700; padding:.7rem 1rem; outline:none; transition:border-color .2s;
+  -moz-appearance:textfield;
+}
+.meter-input::-webkit-inner-spin-button,.meter-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.meter-input:focus { border-color:var(--accent); }
+.meter-input::placeholder { color:var(--muted); font-size:.95rem; }
+.log-btn {
+  background:var(--accent); color:var(--bg); border:none; border-radius:12px;
+  padding:.7rem 1.1rem; font-family:var(--fd); font-weight:700; font-size:.88rem;
+  cursor:pointer; white-space:nowrap; transition:all .2s;
+}
+.log-btn:hover { background:#33eeff; transform:translateY(-1px); }
+.log-btn:active { transform:translateY(0); }
+
+/* ── History ── */
+.hist-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:.75rem; }
+.clr-btn { font-size:.56rem; font-family:var(--fm); color:var(--muted); background:none; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:.07em; }
+.clr-btn:hover { color:var(--red); }
+.hist-empty { text-align:center; color:var(--muted); font-size:.75rem; font-family:var(--fm); padding:1.5rem 0; }
+.hist-item { display:flex; justify-content:space-between; align-items:center; padding:.6rem 0; border-bottom:1px solid var(--border); }
+.hist-item:last-child { border-bottom:none; }
+.h-date { font-size:.65rem; font-family:var(--fm); color:var(--muted); }
+.h-rdg { font-size:.92rem; font-weight:700; font-family:var(--fm); }
+.h-badge { font-size:.65rem; font-family:var(--fm); padding:.15rem .45rem; border-radius:6px; font-weight:700; }
+.h-delta { font-size:.6rem; color:var(--muted); font-family:var(--fm); }
+
+/* ── APPLIANCES TAB ── */
+.budget-row { display:flex; align-items:center; gap:1rem; }
+.bring { position:relative; width:82px; height:82px; flex-shrink:0; }
+.bring svg { transform:rotate(-90deg); }
+.bring-txt { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.bval { font-size:1.05rem; font-weight:800; font-family:var(--fm); transition:color .4s; }
+.blbl { font-size:.42rem; color:var(--muted); font-family:var(--fm); text-transform:uppercase; }
+.binfo { flex:1; }
+.btitle { font-size:.95rem; font-weight:700; margin-bottom:.2rem; }
+.bsub { font-size:.66rem; color:var(--muted); font-family:var(--fm); line-height:1.6; }
+
+.cc-row { display:flex; gap:.6rem; }
+.cc-item { flex:1; background:var(--surface2); border-radius:10px; padding:.7rem .5rem; text-align:center; }
+.cc-val { font-size:1rem; font-weight:700; font-family:var(--fm); display:block; }
+.cc-lbl { font-size:.5rem; color:var(--muted); font-family:var(--fm); text-transform:uppercase; letter-spacing:.06em; display:block; margin-top:.2rem; }
+
+/* UPS Card */
+.ups-card { background:var(--surface); border:1px solid rgba(255,214,0,.25); border-radius:20px; padding:1.2rem 1.4rem; margin-bottom:.7rem; }
+.ups-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.75rem; }
+.ups-name { font-size:.95rem; font-weight:700; }
+.ups-sub { font-size:.58rem; color:var(--muted); font-family:var(--fm); margin-top:.15rem; }
+.ups-units { font-size:1.3rem; font-weight:800; font-family:var(--fm); color:var(--yellow); text-align:right; }
+.ups-ulbl { font-size:.5rem; color:var(--muted); font-family:var(--fm); text-align:right; display:block; }
+.cut-btn {
+  background:rgba(255,214,0,.12); border:1px solid rgba(255,214,0,.35);
+  color:var(--yellow); border-radius:10px; padding:.55rem .95rem;
+  font-family:var(--fd); font-weight:700; font-size:.78rem; cursor:pointer; transition:all .2s;
+}
+.cut-btn:hover { background:rgba(255,214,0,.22); }
+.cut-list { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.65rem; }
+.cut-tag {
+  background:rgba(255,214,0,.1); border:1px solid rgba(255,214,0,.3);
+  border-radius:6px; padding:.18rem .45rem; font-size:.62rem; font-family:var(--fm);
+  color:var(--yellow); cursor:pointer; display:flex; align-items:center; gap:.25rem;
+}
+.cut-tag:hover { background:rgba(255,61,90,.15); border-color:var(--red); color:var(--red); }
+
+/* Always-on row */
+.ao-row { display:flex; gap:.6rem; margin-bottom:.7rem; }
+.ao-card { flex:1; background:var(--surface); border:1px solid rgba(0,255,135,.2); border-radius:14px; padding:.9rem .75rem; }
+.ao-top { display:flex; justify-content:space-between; margin-bottom:.2rem; }
+.ao-name { font-size:.82rem; font-weight:700; }
+.ao-units { font-size:1rem; font-weight:800; font-family:var(--fm); color:var(--green); display:block; margin-top:.2rem; }
+.ao-sub { font-size:.54rem; color:var(--muted); font-family:var(--fm); }
+.ao-badge { font-size:.48rem; color:var(--green); font-family:var(--fm); letter-spacing:.07em; display:block; margin-top:.2rem; }
+
+/* Group labels */
+.grp-lbl { font-size:.56rem; font-family:var(--fm); color:var(--muted); letter-spacing:.15em; text-transform:uppercase; margin:.6rem 0 .5rem .2rem; }
+
+/* Appliance Cards */
+.app-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:.7rem; }
+.app-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:.9rem .75rem; transition:border-color .2s; }
+.app-card.on { border-color:rgba(0,229,255,.3); }
+.app-card.full-w { grid-column:1/-1; display:flex; align-items:center; gap:.9rem; padding:1rem 1.2rem; }
+.app-em { font-size:1.25rem; }
+.app-em-lg { font-size:1.7rem; flex-shrink:0; }
+.app-units-today { font-size:.65rem; font-family:var(--fm); color:var(--accent); font-weight:700; float:right; }
+.app-name { font-size:.82rem; font-weight:700; line-height:1.2; margin-top:.35rem; }
+.app-sub { font-size:.54rem; color:var(--muted); font-family:var(--fm); margin-top:.1rem; }
+.app-content { flex:1; }
+.app-content .app-name { margin-top:0; }
+.app-units-lg { font-size:.68rem; font-family:var(--fm); color:var(--accent); margin-top:.2rem; }
+
+/* Controls */
+.ctrl-row { display:flex; align-items:center; justify-content:space-between; margin-top:.6rem; }
+.ctrl-row-lg { display:flex; align-items:center; gap:.65rem; }
+.cbtn {
+  width:36px; height:36px; border-radius:10px; background:var(--surface2);
+  border:1px solid var(--border); color:var(--text); font-size:1.1rem; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .15s; flex-shrink:0;
+}
+.cbtn-lg { width:44px; height:44px; font-size:1.3rem; border-radius:12px; }
+.cbtn:active { transform:scale(.9); } .cbtn:hover { border-color:var(--accent); color:var(--accent); }
+.cval { font-size:.95rem; font-weight:800; font-family:var(--fm); text-align:center; min-width:2.2rem; }
+.cval-lg { font-size:1.2rem; min-width:3rem; }
+.cunit { font-size:.52rem; color:var(--muted); font-family:var(--fm); text-align:center; display:block; margin-top:.08rem; }
+
+/* Reset btn */
+.reset-day-btn {
+  width:100%; background:none; border:1px dashed var(--border);
+  border-radius:12px; color:var(--muted); padding:.7rem;
+  font-family:var(--fm); font-size:.68rem; cursor:pointer;
+  transition:all .2s; margin-bottom:.7rem; text-transform:uppercase; letter-spacing:.07em;
+}
+.reset-day-btn:hover { border-color:var(--red); color:var(--red); }
+
+/* ── Overlays ── */
+.overlay { position:fixed; inset:0; background:rgba(8,12,24,.96); z-index:100; display:none; flex-direction:column; padding:2rem 1.5rem; overflow-y:auto; }
+.overlay.open { display:flex; }
+.ov-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.75rem; }
+.ov-title { font-size:1.2rem; font-weight:800; color:var(--accent); }
+.x-btn { background:var(--surface); border:1px solid var(--border); color:var(--text); width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; }
+.sg { margin-bottom:1.2rem; }
+.sl { font-size:.6rem; font-family:var(--fm); color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:.45rem; display:block; }
+.si { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--fm); font-size:1rem; padding:.7rem 1rem; outline:none; transition:border-color .2s; }
+.si:focus { border-color:var(--accent); }
+.sv-btn { width:100%; background:var(--accent); color:var(--bg); border:none; border-radius:12px; padding:.95rem; font-family:var(--fd); font-weight:700; font-size:1rem; cursor:pointer; margin-top:.5rem; }
+
+/* Cut Modal */
+.cut-modal { position:fixed; inset:0; background:rgba(8,12,24,.92); z-index:200; display:none; align-items:center; justify-content:center; padding:1.5rem; }
+.cut-modal.open { display:flex; }
+.cut-box { background:var(--surface); border:1px solid rgba(255,214,0,.4); border-radius:20px; padding:1.5rem; width:100%; max-width:320px; }
+.cut-title { font-size:1rem; font-weight:800; color:var(--yellow); margin-bottom:.5rem; }
+.cut-sub { font-size:.68rem; color:var(--muted); font-family:var(--fm); margin-bottom:1rem; }
+.dur-row { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:.4rem; margin-bottom:.75rem; }
+.dur-btn { background:var(--surface2); border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:.5rem .3rem; font-family:var(--fm); font-size:.72rem; cursor:pointer; transition:all .2s; text-align:center; }
+.dur-btn:hover,.dur-btn.sel { background:rgba(255,214,0,.15); border-color:var(--yellow); color:var(--yellow); }
+.dur-custom { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--fm); font-size:1rem; padding:.6rem .8rem; outline:none; margin-bottom:1rem; -moz-appearance:textfield; }
+.dur-custom::-webkit-inner-spin-button,.dur-custom::-webkit-outer-spin-button{-webkit-appearance:none;}
+.dur-custom:focus { border-color:var(--yellow); }
+.dur-custom::placeholder { color:var(--muted); font-size:.8rem; }
+.cut-actions { display:flex; gap:.5rem; }
+.cut-cancel { flex:1; background:none; border:1px solid var(--border); border-radius:10px; color:var(--muted); padding:.7rem; font-family:var(--fd); font-weight:600; cursor:pointer; }
+.cut-ok { flex:2; background:var(--yellow); border:none; border-radius:10px; color:var(--bg); padding:.7rem; font-family:var(--fd); font-weight:800; cursor:pointer; }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(10px);
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:.6rem 1.2rem; border-radius:100px; font-size:.75rem; font-family:var(--fm);
+  z-index:300; opacity:0; transition:all .3s; white-space:nowrap; pointer-events:none;
+}
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-title">⚡ EB Tracker</div>
+    <div class="logo-sub">MESCOM · LT-1 · GRUHA JYOTI</div>
+  </div>
+  <button class="icon-btn" onclick="openSettings()">⚙️</button>
+</header>
+
+<!-- ══ TRACKER TAB ══ -->
+<div class="page active" id="page-tracker">
+
+  <div class="card zone-card safe" id="zoneCard">
+    <div class="zone-lbl cs" id="zoneLabel">
+      <span class="zdot"></span><span id="zoneTxt">SAFE ZONE</span>
+    </div>
+    <div class="units-row">
+      <span class="units-big" id="unitsUsed" style="color:var(--green)">0</span>
+      <span class="units-of">/ 200 units</span>
+    </div>
+    <div class="units-sub" id="unitsSub">Enter your meter reading below to start</div>
+    <div class="prog-wrap"><div class="prog-fill ps" id="progFill" style="width:0%"></div></div>
+    <div class="prog-marks"><span>0</span><span>50</span><span>100</span><span>150</span><span>200⚠</span></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><span class="st-icon">📅</span><span class="st-val" id="daysLeft">—</span><span class="st-lbl">Days Left</span></div>
+    <div class="stat-card"><span class="st-icon">📊</span><span class="st-val" id="avgDaily">—</span><span class="st-lbl">Units / Day</span></div>
+    <div class="stat-card"><span class="st-icon">🎯</span><span class="st-val" id="projected">—</span><span class="st-lbl">Projected</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💰 Bill Estimate (Current Units)</div>
+    <div class="bill-compare">
+      <div class="bill-sc">
+        <div class="bill-sc-lbl">✅ With Subsidy</div>
+        <div class="bill-amt" id="billWith">₹—</div>
+        <div class="bill-note">If you stay ≤ 200 units</div>
+      </div>
+      <div class="bill-sc hl">
+        <div class="bill-sc-lbl">❌ No Subsidy</div>
+        <div class="bill-amt danger" id="billNo">₹—</div>
+        <div class="bill-note">If you cross 200 units</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📟 Log Meter Reading (Cum. kWh screen)</div>
+    <div class="input-row">
+      <div class="input-grp">
+        <label class="input-lbl">Current kWh Reading</label>
+        <input type="number" class="meter-input" id="readingInput" placeholder="e.g. 5726" inputmode="numeric">
+      </div>
+      <button class="log-btn" onclick="logReading()">LOG</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hist-hdr">
+      <span class="card-title" style="margin:0">📋 Reading History</span>
+      <button class="clr-btn" onclick="clearHistory()">Clear All</button>
+    </div>
+    <div id="histList"><div class="hist-empty">No readings logged yet</div></div>
+  </div>
+
+</div>
+
+<!-- ══ APPLIANCES TAB ══ -->
+<div class="page" id="page-appliances">
+
+  <!-- Budget Ring -->
+  <div class="card">
+    <div class="card-title">⚡ Today's Appliance Estimate</div>
+    <div class="budget-row">
+      <div class="bring">
+        <svg width="82" height="82" viewBox="0 0 82 82">
+          <circle cx="41" cy="41" r="35" fill="none" stroke="#1e2d52" stroke-width="6"/>
+          <circle cx="41" cy="41" r="35" fill="none" stroke="var(--green)" stroke-width="6"
+            stroke-dasharray="219.9" stroke-dashoffset="219.9" stroke-linecap="round"
+            id="bRing" style="transition:stroke-dashoffset .8s ease,stroke .5s"/>
+        </svg>
+        <div class="bring-txt">
+          <span class="bval" id="bVal">0.0</span>
+          <span class="blbl">units</span>
+        </div>
+      </div>
+      <div class="binfo">
+        <div class="btitle" id="bTitle">All good today</div>
+        <div class="bsub" id="bSub">Daily budget: 6.5 units<br>Log your appliances below</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cross Check -->
+  <div class="card">
+    <div class="card-title">🔍 Meter vs Appliance Cross-Check</div>
+    <div class="cc-row">
+      <div class="cc-item"><span class="cc-val" id="ccMeter">—</span><span class="cc-lbl">Meter Delta</span></div>
+      <div class="cc-item"><span class="cc-val" id="ccApp">—</span><span class="cc-lbl">App Estimate</span></div>
+      <div class="cc-item"><span class="cc-val" id="ccDiff">—</span><span class="cc-lbl">Gap</span></div>
+    </div>
+    <div style="font-size:.58rem;color:var(--muted);font-family:var(--fm);margin-top:.7rem;line-height:1.5">Log 2 meter readings today to see real vs estimated usage</div>
+  </div>
+
+  <!-- UPS -->
+  <div class="ups-card">
+    <div class="ups-top">
+      <div>
+        <div class="ups-name">🔋 UPS / Inverter</div>
+        <div class="ups-sub">~15W standby always on · log power cuts</div>
+      </div>
+      <div>
+        <div class="ups-units" id="upsUnits">0.36</div>
+        <span class="ups-ulbl">units today</span>
+      </div>
+    </div>
+    <button class="cut-btn" onclick="openCutModal()">⚡ Log Power Cut</button>
+    <div class="cut-list" id="cutList"><span style="font-size:.6rem;color:var(--muted);font-family:var(--fm)">No power cuts logged today</span></div>
+  </div>
+
+  <!-- Always On -->
+  <div class="grp-lbl">🟢 Always On (Auto)</div>
+  <div class="ao-row">
+    <div class="ao-card">
+      <div class="ao-top"><span class="ao-name">🧊 Fridge</span></div>
+      <div class="ao-sub">Whirlpool 3★ · 253u/yr</div>
+      <span class="ao-units" id="aoFridge">0.69</span>
+      <span class="ao-badge">AUTO · 24×7</span>
+    </div>
+    <div class="ao-card">
+      <div class="ao-top"><span class="ao-name">📶 WiFi Router</span></div>
+      <div class="ao-sub">TP-Link WR850N · 10W</div>
+      <span class="ao-units" id="aoWifi">0.24</span>
+      <span class="ao-badge">AUTO · 24×7</span>
+    </div>
+  </div>
+
+  <!-- Heavy Appliances -->
+  <div class="grp-lbl">🔴 Heavy</div>
+  <div id="heavyCards" class="app-grid"></div>
+
+  <!-- Medium Appliances -->
+  <div class="grp-lbl">🟡 Medium</div>
+  <div id="mediumCards" class="app-grid"></div>
+
+  <!-- Occasional -->
+  <div class="grp-lbl">⚪ Occasional</div>
+  <div id="occasionalCards" class="app-grid"></div>
+
+  <button class="reset-day-btn" onclick="resetDay()">🔄 Reset Today's Log</button>
+
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="overlay" id="settingsOv">
+  <div class="ov-hdr">
+    <span class="ov-title">⚙️ Settings</span>
+    <button class="x-btn" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="sg"><label class="sl">Billing Start Reading (kWh)</label><input type="number" class="si" id="sReading" inputmode="numeric"></div>
+  <div class="sg"><label class="sl">Billing Start Date</label><input type="date" class="si" id="sDate"></div>
+  <div class="sg"><label class="sl">Subsidy Cutoff (units)</label><input type="number" class="si" id="sLimit" inputmode="numeric"></div>
+  <div class="sg"><label class="sl">Sanctioned Load (kW)</label><input type="number" class="si" id="sSanc" inputmode="numeric"></div>
+  <div class="sg"><label class="sl">Entitlement Units (Gruha Jyoti)</label><input type="number" class="si" id="sEntitle" inputmode="numeric"></div>
+  <button class="sv-btn" onclick="saveSettings()">Save Settings</button>
+  <div style="margin-top:1rem;font-size:.6rem;color:var(--muted);font-family:var(--fm);line-height:1.6">
+    Update Start Reading + Start Date each month when new bill arrives.<br>
+    Then tap "New Cycle" to also clear history.
+  </div>
+  <button class="sv-btn" style="background:rgba(255,61,90,.2);color:var(--red);border:1px solid rgba(255,61,90,.3);margin-top:.75rem" onclick="newCycle()">🔄 New Cycle (Update + Clear History)</button>
+</div>
+
+<!-- ══ CUT MODAL ══ -->
+<div class="cut-modal" id="cutModal">
+  <div class="cut-box">
+    <div class="cut-title">⚡ Log Power Cut</div>
+    <div class="cut-sub">How long was the power cut?</div>
+    <div class="dur-row">
+      <button class="dur-btn" onclick="selDur(15,this)">15m</button>
+      <button class="dur-btn sel" onclick="selDur(30,this)">30m</button>
+      <button class="dur-btn" onclick="selDur(45,this)">45m</button>
+      <button class="dur-btn" onclick="selDur(60,this)">1hr</button>
+    </div>
+    <input type="number" class="dur-custom" id="durCustom" placeholder="Custom duration in minutes..." inputmode="numeric">
+    <div class="cut-actions">
+      <button class="cut-cancel" onclick="closeCutModal()">Cancel</button>
+      <button class="cut-ok" onclick="confirmCut()">Log it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB BAR ══ -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-tracker" onclick="switchTab('tracker')">
+    <span class="tab-icon">📊</span><span class="tab-lbl">Tracker</span>
+  </button>
+  <button class="tab-btn" id="tab-appliances" onclick="switchTab('appliances')">
+    <span class="tab-icon">🔌</span><span class="tab-lbl">Appliances</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDT2URT4FpF_z1KhxBSTtPdQIe8AMVNErw",
+  authDomain: "eb-tracker-family.firebaseapp.com",
+  databaseURL: "https://eb-tracker-family-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "eb-tracker-family",
+  storageBucket: "eb-tracker-family.firebasestorage.app",
+  messagingSenderId: "374587648834",
+  appId: "1:374587648834:web:c8f9c81aaaa01e7e3f36db"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+
+
+// ══ APPLIANCE DEFINITIONS ══
+const APPS = [
+  // Heavy - full width
+  { id:'ac',     name:'AC',              emoji:'🥶', sub:'Panasonic 5★ Inverter · 484W avg', watt:484,   type:'hrs',    step:0.5, group:'heavy' },
+  { id:'geyser', name:'Geyser',          emoji:'🚿', sub:'5★ Instant 3L · 0.14u/use',       perUse:0.14, type:'uses',   step:1,   group:'heavy' },
+  { id:'washer', name:'Washing Machine', emoji:'🧺', sub:'LG 5★ Inverter · 0.067u/cycle',  perUse:0.067,type:'cycles', step:1,   group:'heavy' },
+  // Medium - 2-col grid
+  { id:'fans',   name:'Fans ×2',   emoji:'💨', sub:'Atomberg BLDC · 28W each', watt:56,  type:'hrs',  step:0.5, group:'medium' },
+  { id:'laptop', name:'Laptop',    emoji:'💻', sub:'110W · 150W brick, no battery', watt:110, type:'hrs',  step:0.5, group:'medium' },
+  { id:'cooler', name:'Air Cooler',emoji:'🌬️', sub:'Havells · 200W',            watt:200, type:'hrs',  step:0.5, group:'medium' },
+  { id:'pump',   name:'Water Pump',emoji:'🌊', sub:'750W',                       watt:750, type:'mins', step:15,  group:'medium' },
+  { id:'tv',     name:'TV + STB',  emoji:'📺', sub:'120W',                       watt:120, type:'hrs',  step:0.5, group:'medium' },
+  { id:'lights', name:'LED Lights',emoji:'💡', sub:'30W total',                  watt:30,  type:'hrs',  step:0.5, group:'medium' },
+  // Occasional
+  { id:'mixer', name:'Mixer',  emoji:'🧁', sub:'750W · ~10min/use',  perUse:0.125, type:'uses', step:1, group:'occasional' },
+  { id:'iron',  name:'Iron',   emoji:'👔', sub:'1000W · ~20min/use', perUse:0.333, type:'uses', step:1, group:'occasional' },
+];
+
+const ALWAYS_ON = { fridge: 253/365, wifi: 10*24/1000, ups_standby: 15*24/1000 };
+const CYCLE = 31;
+const RATES = { fixed:145, energy:5.80, fppca:0.38, png:0.36, taxOnEnergy:0.09 };
+
+// ══ STATE ══
+let S = { startReading:5714, startDate:'2026-03-11', limit:200, sancLoad:5, entitlement:58 };
+let H = []; // history
+let T = { date:todayStr(), appliances:{ac:0,geyser:0,washer:0,fans:0,laptop:0,cooler:0,pump:0,tv:0,lights:0,mixer:0,iron:0}, powerCuts:[] };
+let selDuration = 30;
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// ══ PERSISTENCE ══
+// NEW PERSISTENCE — Firebase Realtime DB
+function save() {
+  update(ref(db, 'family'), {
+    settings: S,
+    history: H.length ? H : null,
+    today: T
+  });
+}
+
+function initFirebase() {
+  onValue(ref(db, 'family'), (snapshot) => {
+    const data = snapshot.val();
+    if (!data) { updateTracker(); updateAppliances(); return; }
+
+    if (data.settings) S = { ...S, ...data.settings };
+
+    if (data.history)
+      H = Array.isArray(data.history) ? data.history : Object.values(data.history);
+    else H = [];
+
+    if (data.today) {
+      T = data.today;
+      T.powerCuts = T.powerCuts || [];   // Firebase drops empty arrays
+      if (T.date !== todayStr()) {        // New day — reset appliances
+        T = { date: todayStr(), appliances: {ac:0,geyser:0,washer:0,fans:0,laptop:0,cooler:0,pump:0,tv:0,lights:0,mixer:0,iron:0}, powerCuts: [] };
+        save();
+      }
+    }
+
+    updateTracker();
+    updateAppliances();
+  });
+}
+
+// ══ BILL CALC (verified against actual bills) ══
+// Tax = 9% on Energy charges only (not fixed/fppca/png)
+function calcBill(units, withSubsidy) {
+  const fixed = S.sancLoad * RATES.fixed;
+  const energy = units * RATES.energy;
+  const fppca = units * RATES.fppca;
+  const png = units * RATES.png;
+  const tax = energy * RATES.taxOnEnergy;
+  const gross = fixed + energy + fppca + png + tax;
+  if (!withSubsidy || units > S.limit) return Math.round(gross);
+  // Gruha Jyoti subsidy deduction
+  const sub = Math.min(S.entitlement, units);
+  const sFixed = S.sancLoad * RATES.fixed;
+  const sEnergy = sub * RATES.energy;
+  const sFppca = sub * RATES.fppca;
+  const sPng = sub * RATES.png;
+  const sTax = sEnergy * RATES.taxOnEnergy;
+  const subsidy = sFixed + sEnergy + sFppca + sPng + sTax;
+  return Math.round(gross - subsidy);
+}
+
+// ══ APPLIANCE UNITS ══
+function appUnits(app, val) {
+  if (!val) return 0;
+  if (app.perUse !== undefined) return app.perUse * val;
+  if (app.type === 'mins') return (app.watt/1000) * (val/60);
+  return (app.watt/1000) * val;
+}
+
+function cutUnits(mins) {
+  // ~100W avg load during cut, recharge at 75% efficiency + charger overhead
+  // Simplified: 0.15 units per hour of cut
+  return 0.15 * (mins/60);
+}
+
+function todayTotal() {
+  let t = ALWAYS_ON.fridge + ALWAYS_ON.wifi + ALWAYS_ON.ups_standby;
+  APPS.forEach(a => t += appUnits(a, T.appliances[a.id]||0));
+  T.powerCuts.forEach(c => t += cutUnits(c.mins));
+  return t;
+}
+
+// ══ TRACKER TAB ══
+function updateTracker() {
+  const latest = H.length > 0 ? H[H.length-1].reading : S.startReading;
+  const used = Math.max(0, latest - S.startReading);
+  const pct = Math.min(100, (used/S.limit)*100);
+
+  let zone, zc, col, pc, zt;
+  if (used > S.limit)     { zone='over';    zc='co'; col='var(--red)';    pc='pd'; zt='🚨 SUBSIDY LOST'; }
+  else if (used >= 186)   { zone='danger';  zc='cd'; col='var(--red)';    pc='pd'; zt='⚠ DANGER ZONE'; }
+  else if (used >= 151)   { zone='caution'; zc='cc'; col='var(--yellow)'; pc='pc'; zt='⚡ CAUTION'; }
+  else                    { zone='safe';    zc='cs'; col='var(--green)';  pc='ps'; zt='✅ SAFE ZONE'; }
+
+  const zCard = document.getElementById('zoneCard');
+  zCard.className = `card zone-card ${zone}`;
+  const zLbl = document.getElementById('zoneLabel');
+  zLbl.className = `zone-lbl ${zc}`;
+  document.getElementById('zoneTxt').textContent = zt;
+  document.getElementById('unitsUsed').textContent = used;
+  document.getElementById('unitsUsed').style.color = col;
+  const pf = document.getElementById('progFill');
+  pf.style.width = pct + '%';
+  pf.className = `prog-fill ${pc}`;
+  document.getElementById('unitsSub').textContent = used > S.limit
+    ? `${used - S.limit} units over — subsidy lost, full bill applies`
+    : `${S.limit - used} units remaining before losing Gruha Jyoti subsidy`;
+
+  // Stats
+  const start = new Date(S.startDate);
+  const now = new Date();
+  const daysPassed = Math.max(1, Math.round((now - start)/86400000));
+  const daysLeft = Math.max(0, CYCLE - daysPassed);
+  const avg = used > 0 ? (used/daysPassed).toFixed(1) : '—';
+  const proj = used > 0 ? Math.round((used/daysPassed)*CYCLE) : '—';
+  document.getElementById('daysLeft').textContent = daysLeft;
+  document.getElementById('avgDaily').textContent = avg;
+  document.getElementById('projected').textContent = proj;
+
+  // Bill
+  document.getElementById('billWith').textContent = used > 0 ? '₹'+calcBill(used,true) : '₹—';
+  document.getElementById('billNo').textContent = used > 0 ? '₹'+calcBill(used,false) : '₹—';
+
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('histList');
+  if (!H.length) { el.innerHTML = '<div class="hist-empty">No readings logged yet</div>'; return; }
+  el.innerHTML = [...H].reverse().map((e,i) => {
+    const idx = H.length-1-i;
+    const prev = idx > 0 ? H[idx-1].reading : S.startReading;
+    const delta = e.reading - prev;
+    const cum = e.reading - S.startReading;
+    const pct = Math.min(100, Math.round((cum/S.limit)*100));
+    const col = pct>=100?'#ff3d5a':pct>=75?'#ffd600':'#00ff87';
+    return `<div class="hist-item">
+      <div><div class="h-date">${e.date} · ${e.time}</div><div class="h-rdg">${e.reading} kWh</div></div>
+      <div style="text-align:right">
+        <div class="h-badge" style="background:${col}22;color:${col}">${cum}u (${pct}%)</div>
+        <div class="h-delta">+${delta} since last</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function logReading() {
+  const v = parseFloat(document.getElementById('readingInput').value);
+  if (!v || v < S.startReading) { toast('⚠ Must be ≥ ' + S.startReading); return; }
+  if (H.length && v < H[H.length-1].reading) { toast('⚠ Less than previous reading'); return; }
+  const n = new Date();
+  H.push({ reading:v,
+    date: n.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),
+    time: n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    ts: n.getTime() });
+  save(); document.getElementById('readingInput').value = '';
+  updateTracker(); updateAppliances(); toast('✅ Reading logged!');
+}
+
+function clearHistory() {
+  if (!confirm('Clear all meter readings?')) return;
+  H = []; save(); updateTracker(); toast('🗑 History cleared');
+}
+
+// ══ APPLIANCES TAB ══
+function updateAppliances() {
+  const total = todayTotal();
+  const budget = S.limit / CYCLE;
+  const pct = Math.min(1, total / budget);
+  const circ = 2 * Math.PI * 35; // 219.9
+
+  const ring = document.getElementById('bRing');
+  ring.style.strokeDashoffset = circ - (pct * circ);
+  const rc = pct >= 1 ? 'var(--red)' : pct >= 0.8 ? 'var(--yellow)' : 'var(--green)';
+  ring.style.stroke = rc;
+  document.getElementById('bVal').textContent = total.toFixed(1);
+  document.getElementById('bVal').style.color = rc;
+  document.getElementById('bTitle').textContent = total > budget ? '⚠ Over daily budget!' : total > budget*0.8 ? '⚡ Getting close' : '✅ All good today';
+  const rem = budget - total;
+  document.getElementById('bSub').textContent = `Daily budget: ${budget.toFixed(1)} units\n${rem > 0 ? rem.toFixed(1)+' units headroom remaining' : Math.abs(rem).toFixed(1)+' units over budget'}`;
+
+  // UPS
+  const upsT = ALWAYS_ON.ups_standby + T.powerCuts.reduce((s,c)=>s+cutUnits(c.mins),0);
+  document.getElementById('upsUnits').textContent = upsT.toFixed(2);
+  const cutEl = document.getElementById('cutList');
+  if (!T.powerCuts.length) {
+    cutEl.innerHTML = '<span style="font-size:.6rem;color:var(--muted);font-family:var(--fm)">No power cuts logged today</span>';
+  } else {
+    cutEl.innerHTML = T.powerCuts.map((c,i) =>
+      `<span class="cut-tag" onclick="removeCut(${i})">⚡${c.mins}m ×</span>`).join('');
+  }
+
+  // Render appliance cards
+  const heavy = APPS.filter(a => a.group === 'heavy');
+  const medium = APPS.filter(a => a.group === 'medium');
+  const occasional = APPS.filter(a => a.group === 'occasional');
+
+  document.getElementById('heavyCards').innerHTML = heavy.map(a => heavyCard(a)).join('');
+  document.getElementById('mediumCards').innerHTML = medium.map(a => medCard(a)).join('');
+  document.getElementById('occasionalCards').innerHTML = occasional.map(a => medCard(a)).join('');
+
+  // Cross check
+  const todayLabel = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  const todayH = H.filter(h => h.date === todayLabel);
+  if (todayH.length >= 2) {
+    const mDelta = todayH[todayH.length-1].reading - todayH[0].reading;
+    const appEst = total;
+    const diff = mDelta - appEst;
+    document.getElementById('ccMeter').textContent = mDelta.toFixed(1)+'u';
+    document.getElementById('ccApp').textContent = appEst.toFixed(1)+'u';
+    const diffEl = document.getElementById('ccDiff');
+    diffEl.textContent = (diff>0?'+':'')+diff.toFixed(1)+'u';
+    diffEl.style.color = Math.abs(diff)>1.5?'var(--yellow)':'var(--green)';
+  } else {
+    document.getElementById('ccMeter').textContent = '—';
+    document.getElementById('ccApp').textContent = total.toFixed(1)+'u';
+    document.getElementById('ccDiff').textContent = '—';
+    document.getElementById('ccDiff').style.color = 'var(--muted)';
+  }
+}
+
+function dispVal(app) {
+  const v = T.appliances[app.id] || 0;
+  if (app.type==='mins') return v+'m';
+  if (app.type==='uses'||app.type==='cycles') return v+'';
+  return v+'h';
+}
+
+function heavyCard(app) {
+  const v = T.appliances[app.id] || 0;
+  const u = appUnits(app, v);
+  const on = v > 0;
+  return `<div class="app-card full-w${on?' on':''}" style="margin-bottom:.6rem">
+    <div class="app-em-lg">${app.emoji}</div>
+    <div class="app-content">
+      <div class="app-name">${app.name}</div>
+      <div class="app-sub">${app.sub}</div>
+      <div class="app-units-lg">${u>0?u.toFixed(3)+' units today':'—'}</div>
+    </div>
+    <div class="ctrl-row-lg">
+      <button class="cbtn cbtn-lg" onclick="adj('${app.id}',-${app.step})">−</button>
+      <div style="text-align:center">
+        <div class="cval cval-lg">${dispVal(app)}</div>
+        <span class="cunit">${app.type}</span>
+      </div>
+      <button class="cbtn cbtn-lg" onclick="adj('${app.id}',${app.step})">+</button>
+    </div>
+  </div>`;
+}
+
+function medCard(app) {
+  const v = T.appliances[app.id] || 0;
+  const u = appUnits(app, v);
+  const on = v > 0;
+  return `<div class="app-card${on?' on':''}">
+    <div>
+      <span class="app-em">${app.emoji}</span>
+      <span class="app-units-today">${u>0?u.toFixed(2)+'u':''}</span>
+    </div>
+    <div class="app-name">${app.name}</div>
+    <div class="app-sub">${app.sub}</div>
+    <div class="ctrl-row">
+      <button class="cbtn" onclick="adj('${app.id}',-${app.step})">−</button>
+      <div>
+        <div class="cval">${dispVal(app)}</div>
+        <span class="cunit">${app.type}</span>
+      </div>
+      <button class="cbtn" onclick="adj('${app.id}',${app.step})">+</button>
+    </div>
+  </div>`;
+}
+
+function adj(id, delta) {
+  const cur = T.appliances[id] || 0;
+  T.appliances[id] = Math.max(0, Math.round((cur+delta)*100)/100);
+  save(); updateAppliances();
+}
+
+function resetDay() {
+  if (!confirm('Reset today\'s appliance log?')) return;
+  T = { date:todayStr(), appliances:{ac:0,geyser:0,washer:0,fans:0,laptop:0,cooler:0,pump:0,tv:0,lights:0,mixer:0,iron:0}, powerCuts:[] };
+  save(); updateAppliances(); toast('🔄 Reset done');
+}
+
+// ══ POWER CUT MODAL ══
+function openCutModal() {
+  selDuration = 30; document.getElementById('durCustom').value = '';
+  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.dur-btn')[1].classList.add('sel');
+  document.getElementById('cutModal').classList.add('open');
+}
+function closeCutModal() { document.getElementById('cutModal').classList.remove('open'); }
+function selDur(mins, el) {
+  selDuration = mins; document.getElementById('durCustom').value = '';
+  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function confirmCut() {
+  const custom = document.getElementById('durCustom').value;
+  const mins = custom ? parseInt(custom) : selDuration;
+  if (!mins||mins<=0) { toast('⚠ Enter valid duration'); return; }
+  T.powerCuts.push({mins});
+  save(); closeCutModal(); updateAppliances(); toast(`⚡ ${mins}min cut logged`);
+}
+function removeCut(i) { T.powerCuts.splice(i,1); save(); updateAppliances(); }
+
+// ══ TAB SWITCH ══
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab==='appliances') updateAppliances();
+  if (tab==='tracker') updateTracker();
+}
+
+// ══ SETTINGS ══
+function openSettings() {
+  document.getElementById('sReading').value = S.startReading;
+  document.getElementById('sDate').value = S.startDate;
+  document.getElementById('sLimit').value = S.limit;
+  document.getElementById('sSanc').value = S.sancLoad;
+  document.getElementById('sEntitle').value = S.entitlement;
+  document.getElementById('settingsOv').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsOv').classList.remove('open'); }
+function saveSettings() {
+  S.startReading = parseFloat(document.getElementById('sReading').value)||5714;
+  S.startDate = document.getElementById('sDate').value||'2026-03-11';
+  S.limit = parseInt(document.getElementById('sLimit').value)||200;
+  S.sancLoad = parseFloat(document.getElementById('sSanc').value)||5;
+  S.entitlement = parseInt(document.getElementById('sEntitle').value)||58;
+  save(); closeSettings(); updateTracker(); updateAppliances(); toast('✅ Settings saved!');
+}
+function newCycle() {
+  const reading = parseFloat(document.getElementById('sReading').value)||S.startReading;
+  const date = document.getElementById('sDate').value||S.startDate;
+  if (!reading||!date) { toast('⚠ Fill start reading and date'); return; }
+  S.startReading = reading; S.startDate = date;
+  S.limit = parseInt(document.getElementById('sLimit').value)||200;
+  S.sancLoad = parseFloat(document.getElementById('sSanc').value)||5;
+  S.entitlement = parseInt(document.getElementById('sEntitle').value)||58;
+  H = [];
+  T = { date:todayStr(), appliances:{ac:0,geyser:0,washer:0,fans:0,laptop:0,cooler:0,pump:0,tv:0,lights:0,mixer:0,iron:0}, powerCuts:[] };
+  save(); closeSettings(); updateTracker(); updateAppliances(); toast('🔄 New cycle started!');
+}
+
+// ══ TOAST ══
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ══ INIT ══
+document.addEventListener('DOMContentLoaded', () => {
+  initFirebase(); updateTracker();
+  document.getElementById('readingInput').addEventListener('keydown', e => { if(e.key==='Enter') logReading(); });
+});
+</script>
+</body>
+</html>
