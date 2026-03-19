@@ -8,7 +8,7 @@ A Progressive Web App (PWA) to track monthly electricity consumption in real-tim
 
 ## 📱 Demo
 
-> _Add a screenshot or screen recording GIF here_
+![EB Tracker - Dashboard](screenshots/tracker.png)
 
 ---
 
