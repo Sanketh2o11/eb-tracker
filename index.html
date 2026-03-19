@@ -872,7 +872,21 @@ function toast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
-
+// Expose to global scope (needed because script is type="module")
+window.switchTab = switchTab;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.saveSettings = saveSettings;
+window.newCycle = newCycle;
+window.logReading = logReading;
+window.clearHistory = clearHistory;
+window.adj = adj;
+window.resetDay = resetDay;
+window.openCutModal = openCutModal;
+window.closeCutModal = closeCutModal;
+window.selDur = selDur;
+window.confirmCut = confirmCut;
+window.removeCut = removeCut;
 // ══ INIT ══
 document.addEventListener('DOMContentLoaded', () => {
   initFirebase(); updateTracker();
