@@ -478,6 +478,8 @@ header {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+  
 
 const firebaseConfig = {
   apiKey: "AIzaSyDT2URT4FpF_z1KhxBSTtPdQIe8AMVNErw",
@@ -491,7 +493,7 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
-
+const auth = getAuth(fbApp);
 
 
 // ══ APPLIANCE DEFINITIONS ══
@@ -892,6 +894,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initFirebase(); updateTracker();
   document.getElementById('readingInput').addEventListener('keydown', e => { if(e.key==='Enter') logReading(); });
 });
+let tapCount = 0;
+  document.querySelector('.logo-title').addEventListener('click', () => {
+    tapCount++;
+    if (tapCount >= 5) {
+      tapCount = 0;
+      const pass = prompt('Admin password:');
+      if (pass) signInWithEmailAndPassword(auth, 's.sanketh.hegde@gmail.com', pass)
+        .then(() => toast('✅ Logged in as admin'))
+        .catch(() => toast('❌ Wrong password'));
+    }
+  });
+
 </script>
 </body>
 </html>
